@@ -532,7 +532,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // ── BOTTOM NAV ────────────────────────────────────────────────────────────
 
   Widget _buildBottomNavBar() {
-    final mobileItems = _navItems.take(5).toList();
+    final mobileItems = _navItems;
     final currentIdx = mobileItems.indexWhere((i) => i.index == _selectedIndex);
     final safeIdx = currentIdx < 0 ? 0 : currentIdx;
 
@@ -544,7 +544,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height: 68,
           child: Row(
             children: mobileItems.asMap().entries.map((entry) {
               final i = entry.key;
@@ -948,40 +948,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // ── EMPTY STATE ───────────────────────────────────────────────────────────
 
-  Widget _buildEmptyState(String message, IconData icon) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: C.primarySoft,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(icon, size: 40, color: C.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: C.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Intenta con otro término de búsqueda',
-              style: TextStyle(fontSize: 13, color: C.textMuted),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildEmptyState(String message, IconData icon) {
+  //   return Center(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(40),
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           Container(
+  //             padding: const EdgeInsets.all(20),
+  //             decoration: BoxDecoration(
+  //               color: C.primarySoft,
+  //               borderRadius: BorderRadius.circular(20),
+  //             ),
+  //             child: Icon(icon, size: 40, color: C.primary),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           Text(
+  //             message,
+  //             style: const TextStyle(
+  //               fontSize: 16,
+  //               fontWeight: FontWeight.w600,
+  //               color: C.primary,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           const Text(
+  //             'Intenta con otro término de búsqueda',
+  //             style: TextStyle(fontSize: 13, color: C.textMuted),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // ── DETAIL SHEETS ────────────────────────────────────────────────────────── // ?????? REPORT OPTIONS ────────────────────────────────────────────────────────`r`n`r`n  // ?????? ALL ACTIVITY ──────────────────────────────────────────────────────────
 
@@ -1085,29 +1085,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // ── SNACKBAR ──────────────────────────────────────────────────────────────
 
-  void _showSuccess(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 16,
-            ),
-            const SizedBox(width: S.sm),
-            Text(msg),
-          ],
-        ),
-        backgroundColor: C.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(R.badge),
-        ),
-        margin: const EdgeInsets.all(S.md),
-      ),
-    );
-  }
+  // void _showSuccess(String msg) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Row(
+  //         children: [
+  //           const Icon(
+  //             Icons.check_circle_rounded,
+  //             color: Colors.white,
+  //             size: 16,
+  //           ),
+  //           const SizedBox(width: S.sm),
+  //           Text(msg),
+  //         ],
+  //       ),
+  //       backgroundColor: C.success,
+  //       behavior: SnackBarBehavior.floating,
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadius.circular(R.badge),
+  //       ),
+  //       margin: const EdgeInsets.all(S.md),
+  //     ),
+  //   );
+  // }
 
   void _showNotifications(BuildContext context) {
     showModalBottomSheet(
