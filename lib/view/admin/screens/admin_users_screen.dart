@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide Chip;
+﻿import 'package:flutter/material.dart' hide Chip;
 import 'package:intl/intl.dart';
 import 'package:manda2_admin_frontend/const/colors.dart';
 import 'package:manda2_admin_frontend/view/widgets/widgets.dart';
@@ -38,6 +38,16 @@ class AdminUsersScreen extends StatefulWidget {
 }
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
+  final _periodPresets = const [
+    'Hoy',
+    'Esta semana',
+    'Este mes',
+    'Ultimos 30 dias',
+  ];
+  String _selectedPeriod = 'Este mes';
+  DateTime? _customDate;
+  DateTimeRange? _customRange;
+
   final List<ActiveUser> _activeUsers = [
     ActiveUser(
       id: 'USR001',
@@ -260,15 +270,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: ActionButton(
-            label: 'Agregar',
-            icon: Icons.person_add_outlined,
-            onTap: _showAddUserDialog,
-          ),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _buildPeriodSelector(),
+            ActionButton(
+              label: 'Agregar',
+              icon: Icons.person_add_outlined,
+              onTap: _showAddUserDialog,
+            ),
+          ],
         ),
-        const SizedBox(height: S.sm),
+        const SizedBox(height: 12),
         if (users.isEmpty)
           const _AdminUsersEmptyState(
             message: 'No se encontraron usuarios',
@@ -276,6 +291,17 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           )
         else
           ContentCard(
+            header: CardHeader(
+              title: 'Usuarios activos',
+              action: Text(
+                '${users.length} resultados',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: C.textMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -291,6 +317,242 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildPeriodSelector() {
+    final isCustom = _customDate != null || _customRange != null;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: C.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: C.divider, width: 0.8),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedPeriod,
+              icon: const Icon(Icons.expand_more_rounded, color: C.textMuted),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: C.textSec,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              items: _periodPresets
+                  .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _selectedPeriod = value;
+                  _customDate = null;
+                  _customRange = null;
+                });
+              },
+            ),
+          ),
+        ),
+        InkWell(
+          onTap: _pickByCalendar,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: isCustom ? C.primarySoft : C.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isCustom ? C.primary.withOpacity(0.35) : C.divider,
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.calendar_month_rounded,
+                  size: 16,
+                  color: C.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _calendarLabel(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isCustom ? C.primary : C.textSec,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickByCalendar() async {
+    final mode = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: C.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SheetHandle(),
+              const SizedBox(height: 10),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Seleccion de fecha',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: C.textSec,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _calendarOptionTile(
+                icon: Icons.calendar_today_rounded,
+                title: 'Fecha especifica',
+                subtitle: 'Selecciona un unico dia',
+                onTap: () => Navigator.pop(ctx, 'single'),
+              ),
+              const SizedBox(height: 10),
+              _calendarOptionTile(
+                icon: Icons.date_range_rounded,
+                title: 'Rango de fechas',
+                subtitle: 'Selecciona un periodo personalizado',
+                onTap: () => Navigator.pop(ctx, 'range'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (mode == null) return;
+
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year - 2);
+    final lastDate = DateTime(now.year + 2);
+
+    if (mode == 'single') {
+      final pickedDate = await showDatePicker(
+        context: context,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        initialDate: _customDate ?? now,
+        helpText: 'Selecciona una fecha',
+        cancelText: 'Cancelar',
+        confirmText: 'Aplicar',
+      );
+      if (pickedDate != null) {
+        setState(() {
+          _customDate = pickedDate;
+          _customRange = null;
+          _selectedPeriod = 'Fecha personalizada';
+        });
+      }
+      return;
+    }
+
+    final pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDateRange: _customRange,
+      helpText: 'Selecciona un periodo',
+      cancelText: 'Cancelar',
+      confirmText: 'Aplicar',
+    );
+    if (pickedRange != null) {
+      setState(() {
+        _customRange = pickedRange;
+        _customDate = null;
+        _selectedPeriod = 'Periodo personalizado';
+      });
+    }
+  }
+
+  String _calendarLabel() {
+    if (_customRange != null) {
+      final start = DateFormat('dd/MM/yyyy').format(_customRange!.start);
+      final end = DateFormat('dd/MM/yyyy').format(_customRange!.end);
+      return '$start - $end';
+    }
+    if (_customDate != null) {
+      return DateFormat('dd/MM/yyyy').format(_customDate!);
+    }
+    return 'Calendario';
+  }
+
+  Widget _calendarOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: C.bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: C.divider, width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: C.primarySoft,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 17, color: C.primary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: C.textSec,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 11, color: C.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: C.textMuted,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -394,15 +656,15 @@ class _AdminUserListTile extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
             color: _typeColor().withOpacity(0.1),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(_typeIcon(), color: _typeColor(), size: 18),
         ),
-        const SizedBox(width: S.sm),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,7 +673,7 @@ class _AdminUserListTile extends StatelessWidget {
                 user.name,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: C.textSec,
                 ),
               ),
@@ -426,7 +688,7 @@ class _AdminUserListTile extends StatelessWidget {
                     ),
                   ),
                   const Text(
-                    ' � ',
+                    ' • ',
                     style: TextStyle(fontSize: 11, color: C.textMuted),
                   ),
                   Text(
@@ -647,6 +909,12 @@ class _AdminUserDetailSheet extends StatelessWidget {
                     onPressed: onEdit,
                     icon: const Icon(Icons.edit_outlined, size: 16),
                     label: const Text('Editar'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(R.button),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: S.sm),
@@ -669,6 +937,10 @@ class _AdminUserDetailSheet extends StatelessWidget {
                           ? C.success
                           : C.error,
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(R.button),
+                      ),
                     ),
                   ),
                 ),

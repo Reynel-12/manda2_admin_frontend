@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' hide Chip;
 import 'package:intl/intl.dart';
 import 'package:manda2_admin_frontend/const/colors.dart';
-import 'package:manda2_admin_frontend/view/admin/screens/admin_delivery_screen.dart';
 import 'package:manda2_admin_frontend/view/admin/screens/admin_users_screen.dart';
 import 'package:manda2_admin_frontend/view/admin/screens/admin_businesses_screen.dart';
 import 'package:manda2_admin_frontend/view/admin/screens/admin_reports_screen.dart';
@@ -75,29 +74,29 @@ const _navItems = [
     label: 'Negocios',
     index: 2,
   ),
-  _NavItem(
-    icon: Icons.delivery_dining_outlined,
-    activeIcon: Icons.delivery_dining_rounded,
-    label: 'Repartidores',
-    index: 3,
-  ),
+  // _NavItem(
+  //   icon: Icons.delivery_dining_outlined,
+  //   activeIcon: Icons.delivery_dining_rounded,
+  //   label: 'Repartidores',
+  //   index: 3,
+  // ),
   _NavItem(
     icon: Icons.receipt_long_outlined,
     activeIcon: Icons.receipt_long_rounded,
     label: 'Reportes',
-    index: 5,
+    index: 4,
   ),
   _NavItem(
     icon: Icons.settings_outlined,
     activeIcon: Icons.settings_rounded,
     label: 'Config.',
-    index: 4,
+    index: 3,
   ),
   _NavItem(
     icon: Icons.security_outlined,
     activeIcon: Icons.security_rounded,
     label: 'Seguridad',
-    index: 6,
+    index: 5,
   ),
 ];
 
@@ -116,6 +115,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedIndex = 0;
   String _searchQuery = '';
   final _searchCtrl = TextEditingController();
+  final _periodPresets = const [
+    'Hoy',
+    'Esta semana',
+    'Este mes',
+    'Ultimos 30 dias',
+  ];
+  String _selectedPeriod = 'Este mes';
+  DateTime? _customDate;
+  DateTimeRange? _customRange;
 
   // ── DATA ──────────────────────────────────────────────────────────────────
 
@@ -258,12 +266,101 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // ── TOP BAR ───────────────────────────────────────────────────────────────
 
   Widget _buildTopBar(bool isWide) {
+    final now = DateTime.now();
+    final dateLabel = DateFormat('EEEE, d MMMM yyyy').format(now);
+
+    if (!isWide) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(S.md, 12, S.md, 12),
+        decoration: BoxDecoration(
+          color: C.surface,
+          border: Border(bottom: BorderSide(color: C.divider.withOpacity(0.9))),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: C.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.admin_panel_settings_outlined,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Panel de administracion',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: C.primary,
+                      ),
+                    ),
+                  ),
+                  _TopBarAction(
+                    icon: Icons.notifications_outlined,
+                    badge: '3',
+                    onTap: () => _showNotifications(context),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _showAdminProfile(context),
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: const BoxDecoration(
+                        color: C.primarySoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'A',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: C.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                dateLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: C.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
-      height: 60,
+      height: 64,
       padding: EdgeInsets.symmetric(horizontal: isWide ? S.lg : S.md),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: C.surface,
-        border: Border(bottom: BorderSide(color: C.divider, width: 0.5)),
+        border: Border(bottom: BorderSide(color: C.divider.withOpacity(0.9))),
       ),
       child: Row(
         children: [
@@ -285,8 +382,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ],
           Expanded(
             child: Text(
-              DateFormat('EEEE, d MMMM yyyy').format(DateTime.now()),
-              style: const TextStyle(fontSize: 13, color: C.textMuted),
+              dateLabel,
+              style: const TextStyle(
+                fontSize: 13,
+                color: C.textMuted,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           _TopBarAction(
@@ -330,7 +431,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       3: 'Buscar repartidores...',
     };
     return Container(
-      padding: const EdgeInsets.fromLTRB(S.md, S.sm, S.md, 0),
+      padding: const EdgeInsets.fromLTRB(S.md, 10, S.md, 10),
       color: C.surface,
       child: TextField(
         controller: _searchCtrl,
@@ -361,19 +462,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           fillColor: C.bg,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 12,
+            vertical: 14,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(R.input),
-            borderSide: const BorderSide(color: C.divider, width: 0.5),
+            borderSide: const BorderSide(color: C.divider, width: 0.8),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(R.input),
-            borderSide: const BorderSide(color: C.divider, width: 0.5),
+            borderSide: const BorderSide(color: C.divider, width: 0.8),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(R.input),
-            borderSide: const BorderSide(color: C.primary, width: 1.5),
+            borderSide: const BorderSide(color: C.primary, width: 1.3),
           ),
         ),
       ),
@@ -537,51 +638,84 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final safeIdx = currentIdx < 0 ? 0 : currentIdx;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: C.surface,
-        border: Border(top: BorderSide(color: C.divider, width: 0.5)),
+        border: Border(top: BorderSide(color: C.divider.withOpacity(0.9))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 14,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 68,
-          child: Row(
-            children: mobileItems.asMap().entries.map((entry) {
-              final i = entry.key;
-              final item = entry.value;
-              final isActive = safeIdx == i;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() {
-                    _selectedIndex = item.index;
-                    _searchQuery = '';
-                    _searchCtrl.clear();
-                  }),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isActive ? item.activeIcon : item.icon,
-                        size: 22,
-                        color: isActive ? C.accent : C.textMuted,
+          height: 76,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+            child: Row(
+              children: mobileItems.asMap().entries.map((entry) {
+                final i = entry.key;
+                final item = entry.value;
+                final isActive = safeIdx == i;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () => setState(() {
+                      _selectedIndex = item.index;
+                      _searchQuery = '';
+                      _searchCtrl.clear();
+                    }),
+                    borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      constraints: const BoxConstraints(minWidth: 88),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: isActive
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                          color: isActive ? C.accent : C.textMuted,
-                        ),
+                      decoration: BoxDecoration(
+                        color: isActive ? C.primarySoft : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        border: isActive
+                            ? Border.all(
+                                color: C.primary.withOpacity(0.2),
+                                width: 0.8,
+                              )
+                            : null,
                       ),
-                    ],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isActive ? item.activeIcon : item.icon,
+                            size: 20,
+                            color: isActive ? C.primary : C.textMuted,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isActive
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isActive ? C.primary : C.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
         ),
       ),
@@ -591,34 +725,284 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // ── SECTION HEADER ────────────────────────────────────────────────────────
 
   Widget _buildSectionHeader() {
-    return Row(
+    final showPeriodControls = _selectedIndex == 0 || _selectedIndex == 5;
+    return Wrap(
+      runSpacing: 12,
+      spacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Expanded(
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 220, maxWidth: 520),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 _getSectionTitle(),
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: C.primary,
-                  letterSpacing: -0.3,
+                  letterSpacing: -0.35,
+                  height: 1.12,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 _getSubtitle(),
-                style: const TextStyle(fontSize: 13, color: C.textMuted),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: C.textMuted,
+                  height: 1.35,
+                ),
               ),
             ],
           ),
         ),
-        if (_selectedIndex == 1) const SizedBox.shrink(),
-        if (_selectedIndex == 2) const SizedBox.shrink(),
-        if (_selectedIndex == 3) const SizedBox.shrink(),
+        if (showPeriodControls) _buildPeriodSelector(),
       ],
     );
+  }
+
+  Widget _buildPeriodSelector() {
+    final isCustom = _customDate != null || _customRange != null;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: C.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: C.divider, width: 0.8),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedPeriod,
+              borderRadius: BorderRadius.circular(12),
+              icon: const Icon(Icons.expand_more_rounded, color: C.textMuted),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: C.textSec,
+              ),
+              items: _periodPresets
+                  .map(
+                    (item) => DropdownMenuItem(value: item, child: Text(item)),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _selectedPeriod = value;
+                  _customDate = null;
+                  _customRange = null;
+                });
+              },
+            ),
+          ),
+        ),
+        InkWell(
+          onTap: _showPeriodCalendarPicker,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: isCustom ? C.primarySoft : C.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isCustom ? C.primary.withOpacity(0.35) : C.divider,
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.calendar_month_rounded,
+                  size: 16,
+                  color: C.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _periodLabel(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isCustom ? C.primary : C.textSec,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showPeriodCalendarPicker() async {
+    final mode = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: C.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SheetHandle(),
+                const SizedBox(height: 10),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Seleccion de fecha',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: C.textSec,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _calendarOptionTile(
+                  icon: Icons.calendar_today_rounded,
+                  title: 'Fecha especifica',
+                  subtitle: 'Selecciona un unico dia',
+                  onTap: () => Navigator.pop(ctx, 'single'),
+                ),
+                const SizedBox(height: 10),
+                _calendarOptionTile(
+                  icon: Icons.date_range_rounded,
+                  title: 'Rango de fechas',
+                  subtitle: 'Selecciona un periodo personalizado',
+                  onTap: () => Navigator.pop(ctx, 'range'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (mode == null) return;
+
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year - 2);
+    final lastDate = DateTime(now.year + 2);
+
+    if (mode == 'single') {
+      final pickedDate = await showDatePicker(
+        context: context,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        initialDate: _customDate ?? now,
+        helpText: 'Selecciona una fecha',
+        cancelText: 'Cancelar',
+        confirmText: 'Aplicar',
+      );
+      if (pickedDate != null) {
+        setState(() {
+          _customDate = pickedDate;
+          _customRange = null;
+          _selectedPeriod = 'Fecha personalizada';
+        });
+      }
+      return;
+    }
+
+    final pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDateRange: _customRange,
+      helpText: 'Selecciona un periodo',
+      cancelText: 'Cancelar',
+      confirmText: 'Aplicar',
+    );
+
+    if (pickedRange != null) {
+      setState(() {
+        _customRange = pickedRange;
+        _customDate = null;
+        _selectedPeriod = 'Periodo personalizado';
+      });
+    }
+  }
+
+  Widget _calendarOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: C.bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: C.divider, width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: C.primarySoft,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 17, color: C.primary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: C.textSec,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 11, color: C.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: C.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _periodLabel() {
+    if (_customRange != null) {
+      final start = DateFormat('dd/MM/yyyy').format(_customRange!.start);
+      final end = DateFormat('dd/MM/yyyy').format(_customRange!.end);
+      return '$start - $end';
+    }
+    if (_customDate != null) {
+      return DateFormat('dd/MM/yyyy').format(_customDate!);
+    }
+    return 'Calendario';
   }
 
   String _getSectionTitle() {
@@ -629,13 +1013,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return 'Usuarios';
       case 2:
         return 'Negocios';
+      // case 3:
+      //   return 'Repartidores';
       case 3:
-        return 'Repartidores';
-      case 4:
         return 'Configuración';
-      case 5:
+      case 4:
         return 'Reportes';
-      case 6:
+      case 5:
         return 'Seguridad';
       default:
         return 'Dashboard';
@@ -650,13 +1034,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return 'Gestion de usuarios de la plataforma';
       case 2:
         return 'Gestion de negocios de la plataforma';
+      // case 3:
+      //   return 'Gestion de repartidores de la plataforma';
       case 3:
-        return 'Gestion de repartidores de la plataforma';
-      case 4:
         return 'Configuración de la plataforma';
-      case 5:
+      case 4:
         return 'Reportes y análisis de datos';
-      case 6:
+      case 5:
         return 'Seguridad y permisos del sistema';
       default:
         return '';
@@ -671,9 +1055,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: isWide ? 4 : 2,
-        crossAxisSpacing: S.sm,
-        mainAxisSpacing: S.sm,
-        childAspectRatio: isWide ? 1.6 : 1.4,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: isWide ? 1.65 : 1.35,
       ),
       itemCount: _appStats.length,
       itemBuilder: (_, i) => _StatCard(stat: _appStats[i]),
@@ -690,13 +1074,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return AdminUsersScreen(searchQuery: _searchQuery);
       case 2:
         return AdminBusinessesScreen(searchQuery: _searchQuery);
+      // case 3:
+      //   return AdminDeliveryScreen(searchQuery: _searchQuery);
       case 3:
-        return AdminDeliveryScreen(searchQuery: _searchQuery);
-      case 4:
         return _buildSettings();
-      case 5:
+      case 4:
         return const AdminReportsScreen();
-      case 6:
+      case 5:
         return _buildSecurity();
       default:
         return _buildDashboard(isWide);
@@ -1347,12 +1731,15 @@ class _SidebarItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(bottom: 2),
-        padding: const EdgeInsets.symmetric(horizontal: S.sm, vertical: 10),
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
         decoration: BoxDecoration(
           color: isSelected ? C.primarySoft : Colors.transparent,
-          borderRadius: BorderRadius.circular(R.badge),
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(color: C.primary.withOpacity(0.18), width: 0.8)
+              : null,
         ),
         child: Row(
           children: [
@@ -1404,15 +1791,16 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPositive = stat.change.startsWith('+');
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: C.surface,
         borderRadius: BorderRadius.circular(R.card),
+        border: Border.all(color: C.divider.withOpacity(0.9), width: 0.8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 16,
+            offset: const Offset(0, 7),
           ),
         ],
       ),
@@ -1424,8 +1812,8 @@ class _StatCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _bgColor,
                   borderRadius: BorderRadius.circular(R.badge),
@@ -1455,10 +1843,10 @@ class _StatCard extends StatelessWidget {
               Text(
                 stat.value,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 23,
                   fontWeight: FontWeight.w800,
                   color: stat.color,
-                  letterSpacing: -0.5,
+                  letterSpacing: -0.4,
                 ),
               ),
               Text(
@@ -1488,11 +1876,11 @@ class _ActivityRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 34,
-          height: 34,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: item.color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(R.badge),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(item.icon, color: item.color, size: 16),
         ),
@@ -1505,7 +1893,7 @@ class _ActivityRow extends StatelessWidget {
                 item.title,
                 style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: C.textSec,
                 ),
               ),
@@ -1652,6 +2040,13 @@ class _QuickActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(R.card),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

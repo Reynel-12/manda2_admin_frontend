@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:manda2_admin_frontend/const/colors.dart';
 
-class AdminDialog extends StatelessWidget {
+class AdminDialog extends StatefulWidget {
   final String title, subtitle, actionLabel;
   final IconData icon;
   final VoidCallback onAction;
@@ -20,47 +20,157 @@ class AdminDialog extends StatelessWidget {
   });
 
   @override
+  State<AdminDialog> createState() => _AdminDialogState();
+}
+
+class _AdminDialogState extends State<AdminDialog> {
+  String? _selectedDropdown;
+  DateTime? _pickedDate;
+  DateTimeRange? _pickedRange;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDropdown = widget.dropdown?.initialValue;
+  }
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    IconData? icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        color: C.textMuted,
+      ),
+      prefixIcon: icon != null ? Icon(icon, size: 18, color: C.primary) : null,
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: C.bg,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(R.input),
+        borderSide: const BorderSide(color: C.divider, width: 0.8),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(R.input),
+        borderSide: const BorderSide(color: C.divider, width: 0.8),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(R.input),
+        borderSide: const BorderSide(color: C.primary, width: 1.4),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+
+  String _calendarLabel() {
+    if (_pickedRange != null) {
+      return '${_formatDate(_pickedRange!.start)} - ${_formatDate(_pickedRange!.end)}';
+    }
+    if (_pickedDate != null) {
+      return _formatDate(_pickedDate!);
+    }
+    return widget.dropdown?.calendarHint ?? 'Seleccionar por calendario';
+  }
+
+  Future<void> _pickCalendar() async {
+    if (widget.dropdown == null || !widget.dropdown!.allowCalendarSelection) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final firstDate = widget.dropdown!.firstDate ?? DateTime(now.year - 2);
+    final lastDate = widget.dropdown!.lastDate ?? DateTime(now.year + 2);
+
+    if (widget.dropdown!.calendarMode == DialogCalendarMode.range) {
+      final picked = await showDateRangePicker(
+        context: context,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        initialDateRange: _pickedRange,
+        helpText: 'Selecciona un periodo',
+        cancelText: 'Cancelar',
+        confirmText: 'Aplicar',
+      );
+      if (picked != null) {
+        setState(() => _pickedRange = picked);
+        widget.dropdown!.onCalendarRangeSelected?.call(picked);
+      }
+      return;
+    }
+
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDate: _pickedDate ?? now,
+      helpText: 'Selecciona una fecha',
+      cancelText: 'Cancelar',
+      confirmText: 'Aplicar',
+    );
+
+    if (picked != null) {
+      setState(() => _pickedDate = picked);
+      widget.dropdown!.onCalendarDateSelected?.call(picked);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(R.card),
       ),
-      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      actionsPadding: const EdgeInsets.all(12),
+      backgroundColor: C.surface,
+      contentPadding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+      actionsPadding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: C.primarySoft,
-                    borderRadius: BorderRadius.circular(R.badge),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, size: 18, color: C.primary),
+                  child: Icon(widget.icon, size: 19, color: C.primary),
                 ),
-                const SizedBox(width: S.sm),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        widget.title,
                         style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                           color: C.primary,
+                          height: 1.2,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
-                        subtitle,
+                        widget.subtitle,
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: C.textMuted,
+                          height: 1.45,
                         ),
                       ),
                     ],
@@ -68,83 +178,105 @@ class AdminDialog extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: S.md),
+            const SizedBox(height: 18),
             const Divider(color: C.divider, height: 1),
-            const SizedBox(height: S.md),
-            ...fields.map(
+            const SizedBox(height: 16),
+            ...widget.fields.map(
               (f) => Padding(
-                padding: const EdgeInsets.only(bottom: S.sm),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: TextField(
                   controller: TextEditingController(text: f.initialValue),
                   keyboardType: f.keyboardType,
-                  style: const TextStyle(fontSize: 14, color: C.textSec),
-                  decoration: InputDecoration(
-                    labelText: f.label,
-                    labelStyle: const TextStyle(
-                      fontSize: 13,
-                      color: C.textMuted,
-                    ),
-                    prefixIcon: Icon(f.icon, size: 17, color: C.primary),
-                    filled: true,
-                    fillColor: C.bg,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(R.input),
-                      borderSide: const BorderSide(
-                        color: C.divider,
-                        width: 0.5,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(R.input),
-                      borderSide: const BorderSide(
-                        color: C.divider,
-                        width: 0.5,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(R.input),
-                      borderSide: const BorderSide(
-                        color: C.primary,
-                        width: 1.5,
-                      ),
-                    ),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: C.textSec,
+                    fontWeight: FontWeight.w500,
                   ),
+                  decoration: _fieldDecoration(label: f.label, icon: f.icon),
                 ),
               ),
             ),
-            if (dropdown != null)
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                decoration: InputDecoration(
-                  labelText: dropdown!.label,
-                  labelStyle: const TextStyle(fontSize: 13, color: C.textMuted),
-                  filled: true,
-                  fillColor: C.bg,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
+            if (widget.dropdown != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _selectedDropdown,
+                    isExpanded: true,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: C.textSec,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    icon: const Icon(
+                      Icons.expand_more_rounded,
+                      color: C.textMuted,
+                    ),
+                    decoration: _fieldDecoration(
+                      label: widget.dropdown!.label,
+                      icon: widget.dropdown!.icon,
+                    ),
+                    items: widget.dropdown!.items
+                        .map((i) => DropdownMenuItem(value: i, child: Text(i)))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedDropdown = value);
+                      widget.dropdown!.onChanged?.call(value);
+                    },
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(R.input),
-                    borderSide: const BorderSide(color: C.divider, width: 0.5),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(R.input),
-                    borderSide: const BorderSide(color: C.divider, width: 0.5),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(R.input),
-                    borderSide: const BorderSide(color: C.primary, width: 1.5),
-                  ),
-                ),
-                items: dropdown!.items
-                    .map((i) => DropdownMenuItem(value: i, child: Text(i)))
-                    .toList(),
-                onChanged: (_) {},
+                  if (widget.dropdown!.allowCalendarSelection) ...[
+                    const SizedBox(height: 10),
+                    InkWell(
+                      onTap: _pickCalendar,
+                      borderRadius: BorderRadius.circular(R.input),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: C.bg,
+                          borderRadius: BorderRadius.circular(R.input),
+                          border: Border.all(color: C.divider, width: 0.8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_rounded,
+                              size: 18,
+                              color: C.primary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _calendarLabel(),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight:
+                                      (_pickedDate != null ||
+                                          _pickedRange != null)
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  color:
+                                      (_pickedDate != null ||
+                                          _pickedRange != null)
+                                      ? C.textSec
+                                      : C.textMuted,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 12,
+                              color: C.textMuted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
           ],
         ),
@@ -161,7 +293,7 @@ class AdminDialog extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(R.button),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                 ),
                 child: const Text(
                   'Cancelar',
@@ -169,10 +301,10 @@ class AdminDialog extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: S.sm),
+            const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton(
-                onPressed: onAction,
+                onPressed: widget.onAction,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: C.primary,
                   foregroundColor: Colors.white,
@@ -180,10 +312,10 @@ class AdminDialog extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(R.button),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                 ),
                 child: Text(
-                  actionLabel,
+                  widget.actionLabel,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -208,10 +340,36 @@ class DialogField {
   });
 }
 
+enum DialogCalendarMode { single, range }
+
 class DialogDropdown {
   final String label;
   final List<String> items;
-  const DialogDropdown({required this.label, required this.items});
+  final IconData? icon;
+  final String? initialValue;
+  final ValueChanged<String?>? onChanged;
+  final bool allowCalendarSelection;
+  final DialogCalendarMode calendarMode;
+  final String? calendarHint;
+  final DateTime? firstDate;
+  final DateTime? lastDate;
+  final ValueChanged<DateTime>? onCalendarDateSelected;
+  final ValueChanged<DateTimeRange>? onCalendarRangeSelected;
+
+  const DialogDropdown({
+    required this.label,
+    required this.items,
+    this.icon,
+    this.initialValue,
+    this.onChanged,
+    this.allowCalendarSelection = false,
+    this.calendarMode = DialogCalendarMode.range,
+    this.calendarHint,
+    this.firstDate,
+    this.lastDate,
+    this.onCalendarDateSelected,
+    this.onCalendarRangeSelected,
+  });
 }
 
 class ConfirmDialog extends StatelessWidget {
@@ -235,31 +393,33 @@ class ConfirmDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(R.card),
       ),
-      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      actionsPadding: const EdgeInsets.all(12),
+      backgroundColor: C.surface,
+      contentPadding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+      actionsPadding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 54,
+            height: 54,
             decoration: BoxDecoration(
               color: confirmColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: confirmColor, size: 26),
           ),
-          const SizedBox(height: S.md),
+          const SizedBox(height: 14),
           Text(
             title,
             style: const TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: C.primary,
+              height: 1.25,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: S.sm),
+          const SizedBox(height: 8),
           Text(
             body,
             style: const TextStyle(
@@ -283,7 +443,7 @@ class ConfirmDialog extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(R.button),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                 ),
                 child: const Text(
                   'Cancelar',
@@ -291,7 +451,7 @@ class ConfirmDialog extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: S.sm),
+            const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton(
                 onPressed: onConfirm,
@@ -302,7 +462,7 @@ class ConfirmDialog extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(R.button),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                 ),
                 child: Text(
                   confirmLabel,
@@ -332,11 +492,19 @@ class ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: S.md, vertical: S.sm),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: C.accent,
           borderRadius: BorderRadius.circular(R.button),
+          boxShadow: [
+            BoxShadow(
+              color: C.accent.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -370,11 +538,12 @@ class ContentCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: C.surface,
         borderRadius: BorderRadius.circular(R.card),
+        border: Border.all(color: C.divider.withOpacity(0.9), width: 0.8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(0.035),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -386,10 +555,7 @@ class ContentCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(S.md, S.md, S.md, 0),
               child: header!,
             ),
-          Padding(
-            padding: EdgeInsets.all(header != null ? S.md : S.md),
-            child: child,
-          ),
+          Padding(padding: const EdgeInsets.all(S.md), child: child),
         ],
       ),
     );
@@ -405,15 +571,17 @@ class CardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: C.textSec,
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: C.textSec,
+              height: 1.25,
+            ),
           ),
         ),
-        const Spacer(),
         if (action != null) action!,
       ],
     );
@@ -426,8 +594,8 @@ class RowSep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: S.sm),
-      height: 0.5,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      height: 0.8,
       color: C.divider,
     );
   }
@@ -441,10 +609,10 @@ class Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(7),
       ),
       child: Text(
         label,
@@ -465,11 +633,11 @@ class SheetHandle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 10),
-      width: 36,
+      width: 38,
       height: 4,
       decoration: BoxDecoration(
         color: C.divider,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(4),
       ),
     );
   }
@@ -492,7 +660,7 @@ class DetailSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: C.bg,
         borderRadius: BorderRadius.circular(R.card),
-        border: Border.all(color: C.divider, width: 0.5),
+        border: Border.all(color: C.divider, width: 0.7),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,25 +677,25 @@ class DetailSection extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: C.textMuted,
-                    letterSpacing: 0.3,
+                    letterSpacing: 0.25,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 9),
           ...rows.asMap().entries.map(
             (e) => Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: S.md,
-                    vertical: 8,
+                    vertical: 9,
                   ),
                   child: e.value,
                 ),
                 if (e.key < rows.length - 1)
-                  const Divider(height: 1, color: C.divider, indent: 44),
+                  const Divider(height: 1, color: C.divider, indent: 42),
               ],
             ),
           ),
@@ -555,10 +723,14 @@ class DetailRow extends StatelessWidget {
         Icon(icon, size: 16, color: C.textMuted),
         const SizedBox(width: 10),
         SizedBox(
-          width: 80,
+          width: 88,
           child: Text(
             label,
-            style: const TextStyle(fontSize: 12, color: C.textMuted),
+            style: const TextStyle(
+              fontSize: 12,
+              color: C.textMuted,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         Expanded(
@@ -593,24 +765,25 @@ class MiniInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withOpacity(0.07),
         borderRadius: BorderRadius.circular(R.card),
-        border: Border.all(color: color.withOpacity(0.15), width: 0.5),
+        border: Border.all(color: color.withOpacity(0.16), width: 0.7),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: color),
-          const SizedBox(height: 8),
+          const SizedBox(height: 9),
           Text(
             value,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: color,
-              letterSpacing: -0.5,
+              letterSpacing: -0.4,
             ),
           ),
+          const SizedBox(height: 2),
           Text(label, style: const TextStyle(fontSize: 11, color: C.textMuted)),
         ],
       ),
