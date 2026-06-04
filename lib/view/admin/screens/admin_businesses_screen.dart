@@ -194,6 +194,12 @@ class _AdminBusinessesScreenState extends State<AdminBusinessesScreen> {
             keyboardType: TextInputType.phone,
             initialValue: business.phone,
           ),
+          DialogField(
+            label: 'Comisión (%)',
+            icon: Icons.attach_money_outlined,
+            keyboardType: TextInputType.number,
+            initialValue: '10',
+          ),
         ],
       ),
     );
@@ -827,6 +833,11 @@ class _AdminBusinessDetailSheet extends StatelessWidget {
                   icon: Icons.event_outlined,
                   label: 'Registro',
                   value: dateFormat.format(business.registrationDate),
+                ),
+                DetailRow(
+                  icon: Icons.attach_money_outlined,
+                  label: 'Comision',
+                  value: '10 %',
                 ),
               ],
             ),
